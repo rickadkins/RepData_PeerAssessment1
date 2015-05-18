@@ -7,19 +7,107 @@ output:
 
 
 ## Loading and preprocessing the data
+###Retrieve Data
 
+The data are available at https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
 
+Download and place in your working directory
+
+```{r echo=TRUE}
+  data<-read.csv("activity.csv")
+```
+
+###Examine the data
+```{r echo=TRUE}
+  summary(data)
+  str(data)
+  head(data)
+  class(data)          # "data.frame"
+  sapply(data, class)  # show classes of all columns
+  typeof(data)         # "list"
+  names(data)          # show list components
+  dim(data)            # dimensions of object, if any
+
+```
+
+```{r echo=FALSE, results='hide'}
+  library(dplyr)
+  library(ggplot2)
+  library(stringr)
+  library(scales)
+```
 
 ## What is mean total number of steps taken per day?
+```{r echo=TRUE}
+  by_day<-group_by(data,date)
+  sum_by_day<- summarise(by_day,total=sum(steps))
+  hist(sum_by_day$total)  
+```
 
+### Find Mean
+```{r echo=TRUE}
+  avg_by_day<- summarise(by_day,average=mean(steps))
+  qplot(date,total,data=sum_by_day)
+```
+
+### Find Median
+```{r echo=TRUE}  
+  middle_by_day<-summarise(by_day,median=median(steps,na.rm=TRUE))
+  qplot(date,median,data=middle_by_day)
+```
 
 
 ## What is the average daily activity pattern?
+###convert the interval to a valid time
+```{r echo=TRUE}
+  data$Time<-strptime(str_pad(as.character(data[,3]),4,side="left",pad="0"),"%H%M" )
+  
+```
 
+###Put the date and time together
+```{r echo=TRUE}
+  digits4<-str_pad(as.character(data[,3]),4,side="left",pad="0")
+  data$interval6<-paste0(substr(digits4,1,2),":",substr(digits4,3,4),":00")
+  data$datetimeString<-paste(as.character(data[,2]), data$interval6)
+  
 
+df<-data[,c(1,5)]
+df_grp<-group_by(df,interval6)
+df_sum<-summarize(df_grp,total=mean(steps,na.rm=TRUE))
+ggplot(df_sum,aes(interval6,total))+geom_point()
+```
 
 ## Imputing missing values
+###how many NA's are there
+```{r echo=TRUE}
+  length(which(is.na(data[1])==T))
+```
 
+###Make a new dataset with a ZERO where a NA was in original
+```{r echo=TRUE}
+  data2<-data[,c(1,2,3)]
+  data2[is.na(data2[1,])==T,1] <- 0
+```
 
+###Histogram
+
+```{r echo=TRUE}
+  by_day<-group_by(data2,date)
+  sum_by_day<- summarise(by_day,total=sum(steps))
+  hist(sum_by_day$total)  
+```
+
+### Find Mean
+```{r echo=TRUE}
+  avg_by_day<- summarise(by_day,average=mean(steps))
+  qplot(date,total,data=sum_by_day)
+```
+
+### Find Median
+```{r echo=TRUE}  
+  middle_by_day<-summarise(by_day,median=median(steps,na.rm=TRUE))
+  qplot(date,median,data=middle_by_day)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
